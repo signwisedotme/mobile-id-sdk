@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SignWise Services Mobile ID Authentication and Signing Example Page</title>
+  <script src="signwiseMobileId.js"></script>
+</head>
+<body>
+
+<label for="phone">Phone number</label>
+<input name="phone" id="phone" value="37260000007">
+<label for="personal_code">Personal code</label>
+<input name="personal_code" id="personal_code" value="51001091072">
+<button onclick="midAuth()" type="button" id="mid_btn">Authenticate with Mobile ID</button>
+<button onclick="midSign()" type="button" id="mid_btn">Sign with Mobile ID</button>
+<p id="status"></p>
+<p id="countdown"></p>
+
+<script>
+function setStatus(status) {
+  document.getElementById('status').innerText = status;
+}
+
+var swMid = new SignWiseMobileId({lang: 'et'});
+
+// Sample authentication with Mobile ID
+function midAuth() {
+  var data = {
+    ssn: document.getElementById("personal_code").value,
+    msisdn: document.getElementById("phone").value
+  };
+  swMid.authenticate("/mobile-id-ajax.php?auth", data, function(err, result) {
+    if (err) {
+      return setStatus('Starting authentication failed');
+    }
+    if (!result.verificationCode) {
+      return setStatus("Failure reason: " + result.status);
+    }
+    setStatus('An SMS was sent with the verification code ' + result.verificationCode + '. If it matches, please enter your mobile-ID PIN1 code on your phone');
+    swMid.authenticationResult("/mobile-id-ajax.php?auth_result", function(secondsRemaining) {
+      document.getElementById("countdown").innerText = secondsRemaining === false ? '' : secondsRemaining;
+    }, function(err, result) {
+      if (err) {
+        setStatus("Error getting result");
+      } else if (result.status === "OK") {
+        setStatus("Success");
+      } else {
+        setStatus("Failure reason: " + result.status);
+      }
+    });
+  });
+}
+
+// Sample signing with Mobile ID
+function midSign() {
+  var data = {
+    ssn: document.getElementById("personal_code").value,
+    msisdn: document.getElementById("phone").value,
+    container: "test.bdoc"
+  };
+  swMid.sign("/mobile-id-ajax.php?sign", data, function(err, result) {
+    if (err) {
+      return setStatus('Starting signing failed');
+    }
+    if (!result.verificationCode) {
+      return setStatus("Failure reason: " + result.status);
+    }
+    setStatus('An SMS was sent with the verification code ' + result.verificationCode + '. If it matches, please enter your mobile-ID PIN2 code on your phone');
+    swMid.signingResult("/mobile-id-ajax.php?sign_result", function(secondsRemaining) {
+      document.getElementById("countdown").innerText = secondsRemaining === false ? '' : secondsRemaining;
+    }, function(err, result) {
+      if (err) {
+        setStatus("Error getting result");
+      } else if (result.status === "OK") {
+        setStatus("Success");
+      } else {
+        setStatus("Failure reason: " + result.status);
+      }
+    });
+  });
+}
+
+</script>
+</body>
+</html>
+
